@@ -1,0 +1,39 @@
+[remap]
+
+importer="texture"
+type="CompressedTexture2D"
+uid="uid://dtkcw2wjta8hc"
+path.s3tc="res://.godot/imported/floating_island_Image_55.png-8068a6923b354c10c9a200a097109e32.s3tc.ctex"
+path.etc2="res://.godot/imported/floating_island_Image_55.png-8068a6923b354c10c9a200a097109e32.etc2.ctex"
+metadata={
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
+}
+generator_parameters={
+"md5": "fbb9c8699d421491846ef059858f62c3"
+}
+
+[deps]
+
+source_file="res://assets/models/environment/floating_island_Image_55.png"
+dest_files=["res://.godot/imported/floating_island_Image_55.png-8068a6923b354c10c9a200a097109e32.s3tc.ctex", "res://.godot/imported/floating_island_Image_55.png-8068a6923b354c10c9a200a097109e32.etc2.ctex"]
+
+[params]
+
+compress/mode=2
+compress/high_quality=false
+compress/lossy_quality=0.7
+compress/hdr_compression=1
+compress/normal_map=0
+compress/channel_pack=0
+mipmaps/generate=true
+mipmaps/limit=-1
+roughness/mode=0
+roughness/src_normal=""
+process/fix_alpha_border=true
+process/premult_alpha=false
+process/normal_map_invert_y=false
+process/hdr_as_srgb=false
+process/hdr_clamp_exposure=false
+process/size_limit=0
+detect_3d/compress_to=0

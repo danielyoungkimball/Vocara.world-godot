@@ -1,0 +1,56 @@
+# Godot Project .gitignore
+
+# Godot-specific ignores
+.godot/
+.import/
+export.cfg
+export_presets.cfg.bak
+
+# Imported translations (they can be re-generated)
+*.translation
+
+# Monodevelop files
+*.pidb
+*.pdb
+*.mdb
+
+# Godot auto-generated files
+override.cfg
+.mono/
+data_*/
+
+# Build outputs
+builds/
+exports/
+*.tmp
+
+# Large assets (for streaming)
+assets/models/environment/floating_island.glb
+assets/models/environment/floating_island_Image_*.png
+assets/textures/floating_island*.png
+
+# Asset cache
+.asset_cache/
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+ehthumbs.db
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+tmp/
+temp/
