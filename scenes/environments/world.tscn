@@ -1,18 +1,20 @@
-[gd_scene load_steps=2 format=3 uid="uid://dhgsi2agp1m"]
+[gd_scene load_steps=4 format=3 uid="uid://dhgsi2agp1m"]
 
 [ext_resource type="PackedScene" uid="uid://dqcrjnlc2j6p" path="res://scenes/characters/slime_model.tscn" id="2_25q60"]
-# [ext_resource type="PackedScene" uid="uid://cb54ybaht76yv" path="res://assets/models/environment/floating_island.glb" id="2_uafmw"]
+[ext_resource type="PackedScene" uid="uid://b2370gweb7psw" path="res://assets/models/environment/floating_island.glb" id="2_uafmw"]
+[ext_resource type="Script" uid="uid://cd2kkaj7eyxlv" path="res://src/assets/FloatingIslandLoader.gd" id="3_loader"]
 
 [node name="World" type="Node3D"]
 
-# [node name="floating_island" parent="." instance=ExtResource("2_uafmw")]
-# transform = Transform3D(0.236286, 0, 0.0816643, 0, 0.25, 0, -0.0816643, 0, 0.236286, -14.5042, -0.494631, 12.8198)
-
 [node name="Slime_Character" parent="." instance=ExtResource("2_25q60")]
-transform = Transform3D(-0.903821, 0, 0.42791, 0, 1, 0, -0.42791, 0, -0.903821, 2.21989, 0.892093, 7.4924)
+transform = Transform3D(-0.903821, 0, 0.42791, 0, 1, 0, -0.42791, 0, -0.903821, 1.14803, -0.0388567, 10.8513)
 
 [node name="Slime_Character2" parent="." instance=ExtResource("2_25q60")]
-transform = Transform3D(-0.344823, 0, -0.938668, 0, 1, 0, 0.938668, 0, -0.344823, 2.35282, 1.93135, 4.49628)
+transform = Transform3D(-0.344823, 0, -0.938668, 0, 1, 0, 0.938668, 0, -0.344823, 1.49043, -0.104832, 8.46796)
 
 [node name="Slime_Character3" parent="." instance=ExtResource("2_25q60")]
-transform = Transform3D(-0.877096, 0, 0.480315, 0, 1, 0, -0.480315, 0, -0.877096, 1.7953, 0.874398, 1.30411)
+transform = Transform3D(-0.877096, 0, 0.480315, 0, 1, 0, -0.480315, 0, -0.877096, -3.90765, -0.127937, 15.5463)
+
+[node name="floating_island" parent="." instance=ExtResource("2_uafmw")]
+transform = Transform3D(0.240981, 0, 0.0665447, 0, 0.25, 0, -0.0665447, 0, 0.240981, -14.4388, -0.82289, 14.65)
+script = ExtResource("3_loader")

@@ -3,7 +3,7 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://cb54ybaht76yv"
+uid="uid://b2370gweb7psw"
 path="res://.godot/imported/floating_island.glb-f2aab24153c13eb5fc17434bd8bd9424.scn"
 
 [deps]
@@ -19,14 +19,14 @@ nodes/apply_root_scale=true
 nodes/root_scale=1.0
 nodes/import_as_skeleton_bones=false
 nodes/use_node_type_suffixes=true
-meshes/ensure_tangents=false
-meshes/generate_lods=false
-meshes/create_shadow_meshes=false
-meshes/light_baking=0
-meshes/lightmap_texel_size=1.0
-meshes/force_disable_compression=true
+meshes/ensure_tangents=true
+meshes/generate_lods=true
+meshes/create_shadow_meshes=true
+meshes/light_baking=1
+meshes/lightmap_texel_size=0.2
+meshes/force_disable_compression=false
 skins/use_named_skins=true
-animation/import=false
+animation/import=true
 animation/fps=30
 animation/trimming=false
 animation/remove_immutable_tracks=true
