@@ -17,6 +17,10 @@ boot_splash/show_image=false
 boot_splash/fullsize=false
 boot_splash/use_filter=false
 
+[autoload]
+
+GlobalAssetManager="*res://src/core/GlobalAssetManager.gd"
+
 [global_group]
 
 targetable="Camera can lock onto target"

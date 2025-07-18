@@ -1,8 +1,7 @@
-[gd_scene load_steps=4 format=3 uid="uid://dhgsi2agp1m"]
+[gd_scene load_steps=3 format=3 uid="uid://dhgsi2agp1m"]
 
 [ext_resource type="PackedScene" uid="uid://dqcrjnlc2j6p" path="res://scenes/characters/slime_model.tscn" id="2_25q60"]
 [ext_resource type="PackedScene" uid="uid://b2370gweb7psw" path="res://assets/models/environment/floating_island.glb" id="2_uafmw"]
-[ext_resource type="Script" uid="uid://cd2kkaj7eyxlv" path="res://src/assets/FloatingIslandLoader.gd" id="3_loader"]
 
 [node name="World" type="Node3D"]
 
@@ -15,6 +14,6 @@ transform = Transform3D(-0.344823, 0, -0.938668, 0, 1, 0, 0.938668, 0, -0.344823
 [node name="Slime_Character3" parent="." instance=ExtResource("2_25q60")]
 transform = Transform3D(-0.877096, 0, 0.480315, 0, 1, 0, -0.480315, 0, -0.877096, -3.90765, -0.127937, 15.5463)
 
-[node name="floating_island" parent="." instance=ExtResource("2_uafmw")]
+[node name="floating_island" parent="." groups=["large_asset_stream"] instance=ExtResource("2_uafmw")]
 transform = Transform3D(0.240981, 0, 0.0665447, 0, 0.25, 0, -0.0665447, 0, 0.240981, -14.4388, -0.82289, 14.65)
-script = ExtResource("3_loader")
+metadata/asset_path = "floating_island.glb"

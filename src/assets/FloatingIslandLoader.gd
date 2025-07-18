@@ -1,61 +1,87 @@
 extends Node3D
 
-## Floating Island Loader
-## Handles loading the floating island model via asset streaming for web builds
-## or directly from local files for editor/desktop builds
+## Smart Floating Island Loader
+## Handles conditional asset streaming for web builds while preserving editor workflow
+## 
+## Behavior:
+## - Editor/Desktop: Does nothing, uses existing GLB
+## - Web builds: Replaces content with streamed assets when needed
 
 @onready var asset_streamer = get_node("../../AssetStreamer")
-@onready var world = get_node("../../World")
-@onready var placeholder = get_node("../../World/FloatingIslandPlaceholder")
-
 var island_loaded = false
-var island_resource_path = "res://assets/models/environment/floating_island.glb"
+var original_children = []
 
 func _ready():
-	# Wait a frame to ensure nodes are ready
+	print("[FloatingIslandLoader] Initializing on node: ", name)
+	
+	# Store original children (in case we need to restore them)
+	for child in get_children():
+		original_children.append(child)
+	
+	# Wait a frame to let the scene fully load
 	await get_tree().process_frame
 	
-	# Check if we're in a web build or editor/desktop
+	# Check what type of build we're in
 	if OS.has_feature("web"):
-		# Web build - use asset streaming
-		load_floating_island_streaming()
+		print("[FloatingIslandLoader] Web build detected")
+		_handle_web_build()
 	else:
-		# Editor/Desktop build - load directly
-		load_floating_island_direct()
+		print("[FloatingIslandLoader] Desktop/Editor build detected - using existing island")
+		# Desktop/Editor: Do nothing, let the existing island work
 
-func load_floating_island_direct():
-	"""Load the floating island directly from the local file system"""
-	print("[FloatingIslandLoader] Loading island directly from: ", island_resource_path)
+func _handle_web_build():
+	"""Handle asset streaming for web builds"""
 	
-	# Check if the resource exists
-	if not ResourceLoader.exists(island_resource_path):
-		print("[FloatingIslandLoader] ERROR: Island resource not found at: ", island_resource_path)
-		_create_fallback_island()
+	# Check if the island content loaded successfully
+	var has_working_content = _check_island_content()
+	
+	if has_working_content:
+		print("[FloatingIslandLoader] Existing island content works - keeping it")
 		return
 	
-	# Load the resource
-	var island_scene = load(island_resource_path)
-	if not island_scene:
-		print("[FloatingIslandLoader] ERROR: Failed to load island resource!")
-		_create_fallback_island()
-		return
+	print("[FloatingIslandLoader] Island content missing or broken - starting asset streaming")
 	
-	# Instantiate and add to scene
-	_instantiate_island(island_scene)
+	# Clear any broken content
+	_clear_island_content()
+	
+	# Start asset streaming
+	if asset_streamer:
+		_start_asset_streaming()
+	else:
+		print("[FloatingIslandLoader] No AssetStreamer found - creating fallback")
+		_create_fallback_island()
 
-func load_floating_island_streaming():
-	"""Load the floating island via asset streaming for web builds"""
-	if not asset_streamer:
-		print("[FloatingIslandLoader] ERROR: AssetStreamer not found!")
-		_create_fallback_island()
-		return
+func _check_island_content() -> bool:
+	"""Check if the island has working content loaded"""
 	
-	if not placeholder:
-		print("[FloatingIslandLoader] ERROR: FloatingIslandPlaceholder not found!")
-		_create_fallback_island()
-		return
+	# Check if we have any MeshInstance3D children (indicating successful GLB load)
+	for child in get_children():
+		if child is MeshInstance3D:
+			print("[FloatingIslandLoader] Found working MeshInstance3D content")
+			return true
+		if child.get_child_count() > 0:
+			# Check nested children (GLB scenes have nested structure)
+			for nested_child in child.get_children():
+				if nested_child is MeshInstance3D:
+					print("[FloatingIslandLoader] Found working nested MeshInstance3D content")
+					return true
 	
-	print("[FloatingIslandLoader] Requesting floating island asset via streaming...")
+	print("[FloatingIslandLoader] No working mesh content found")
+	return false
+
+func _clear_island_content():
+	"""Clear existing broken content"""
+	print("[FloatingIslandLoader] Clearing broken island content")
+	
+	for child in get_children():
+		child.queue_free()
+
+func _start_asset_streaming():
+	"""Start streaming the island asset"""
+	print("[FloatingIslandLoader] Starting asset streaming...")
+	
+	# Show loading indicator
+	_create_loading_indicator()
 	
 	# Connect to asset streamer signals
 	asset_streamer.asset_loaded.connect(_on_asset_loaded)
@@ -64,12 +90,39 @@ func load_floating_island_streaming():
 	asset_streamer.streaming_error.connect(_on_streaming_error)
 	
 	# Request the floating island asset
-	island_loaded = asset_streamer.request_asset("floating_island.glb", "critical")
+	var already_loaded = asset_streamer.request_asset("floating_island.glb", "critical")
 	
-	if island_loaded:
-		print("[FloatingIslandLoader] Asset already loaded!")
+	if already_loaded:
+		print("[FloatingIslandLoader] Asset already available!")
 	else:
-		print("[FloatingIslandLoader] Asset will be downloaded...")
+		print("[FloatingIslandLoader] Asset downloading...")
+
+func _create_loading_indicator():
+	"""Create a loading indicator while downloading"""
+	print("[FloatingIslandLoader] Creating loading indicator...")
+	
+	var loading_indicator = MeshInstance3D.new()
+	var sphere_mesh = SphereMesh.new()
+	sphere_mesh.radius = 3.0
+	sphere_mesh.height = 6.0
+	loading_indicator.mesh = sphere_mesh
+	
+	var material = StandardMaterial3D.new()
+	material.albedo_color = Color(0.2, 0.8, 1.0, 0.8)
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.emission_enabled = true
+	material.emission = Color(0.2, 0.8, 1.0)
+	loading_indicator.material_override = material
+	
+	add_child(loading_indicator)
+	loading_indicator.name = "LoadingIndicator"
+	
+	# Animate the loading indicator
+	var tween = create_tween()
+	tween.set_loops()
+	tween.parallel().tween_method(func(angle): loading_indicator.rotation_y = angle, 0.0, TAU, 2.0)
+	tween.parallel().tween_method(func(scale): loading_indicator.scale = Vector3.ONE * scale, 0.8, 1.2, 1.0)
+	tween.tween_method(func(scale): loading_indicator.scale = Vector3.ONE * scale, 1.2, 0.8, 1.0)
 
 func _on_download_started(asset_name: String):
 	if asset_name == "floating_island.glb":
@@ -80,23 +133,29 @@ func _on_download_completed(asset_name: String, success: bool):
 		if success:
 			print("[FloatingIslandLoader] Download completed successfully!")
 		else:
-			print("[FloatingIslandLoader] Download failed!")
+			print("[FloatingIslandLoader] Download failed - creating fallback")
 			_create_fallback_island()
 
 func _on_asset_loaded(asset_name: String, resource: Resource):
 	if asset_name == "floating_island.glb":
-		print("[FloatingIslandLoader] Asset loaded via streaming, instantiating...")
-		_instantiate_island(resource)
+		print("[FloatingIslandLoader] Asset loaded! Instantiating...")
+		_instantiate_streamed_island(resource)
 
 func _on_streaming_error(error_message: String):
 	print("[FloatingIslandLoader] Streaming error: ", error_message)
 	_create_fallback_island()
 
-func _instantiate_island(resource: Resource):
+func _instantiate_streamed_island(resource: Resource):
+	"""Replace content with streamed island"""
 	if not resource:
 		print("[FloatingIslandLoader] ERROR: Resource is null!")
 		_create_fallback_island()
 		return
+	
+	# Remove loading indicator
+	var loading_indicator = get_node_or_null("LoadingIndicator")
+	if loading_indicator:
+		loading_indicator.queue_free()
 	
 	# Create the island instance
 	var island_instance = resource.instantiate()
@@ -105,40 +164,49 @@ func _instantiate_island(resource: Resource):
 		_create_fallback_island()
 		return
 	
-	# Set the transform from the placeholder
-	island_instance.transform = placeholder.transform
+	# Add the streamed island
+	add_child(island_instance)
 	
-	# Add to world
-	world.add_child(island_instance)
-	
-	# Remove placeholder
-	placeholder.queue_free()
-	
-	print("[FloatingIslandLoader] ✅ Floating island loaded successfully!")
+	print("[FloatingIslandLoader] ✅ Streamed island loaded successfully!")
 	island_loaded = true
 
 func _create_fallback_island():
+	"""Create a fallback island when streaming fails"""
 	print("[FloatingIslandLoader] Creating fallback island...")
 	
-	# Create a simple cube as fallback
-	var fallback = MeshInstance3D.new()
-	var box_mesh = BoxMesh.new()
-	box_mesh.size = Vector3(20, 5, 20)
-	fallback.mesh = box_mesh
+	# Remove loading indicator
+	var loading_indicator = get_node_or_null("LoadingIndicator")
+	if loading_indicator:
+		loading_indicator.queue_free()
 	
-	# Create a basic material
+	# Create island-like fallback
+	var fallback = MeshInstance3D.new()
+	var cylinder_mesh = CylinderMesh.new()
+	cylinder_mesh.top_radius = 15.0
+	cylinder_mesh.bottom_radius = 12.0
+	cylinder_mesh.height = 8.0
+	fallback.mesh = cylinder_mesh
+	
 	var material = StandardMaterial3D.new()
-	material.albedo_color = Color(0.5, 0.8, 0.3)  # Green color
+	material.albedo_color = Color(0.4, 0.7, 0.2)  # Island green
+	material.roughness = 0.8
 	fallback.material_override = material
 	
-	# Set transform from placeholder
-	fallback.transform = placeholder.transform
+	add_child(fallback)
 	
-	# Add to world
-	world.add_child(fallback)
+	# Add some simple details
+	var rock1 = MeshInstance3D.new()
+	var rock_mesh = SphereMesh.new()
+	rock_mesh.radius = 2.0
+	rock1.mesh = rock_mesh
+	rock1.position = Vector3(5, 4, 3)
+	add_child(rock1)
 	
-	# Remove placeholder
-	placeholder.queue_free()
+	var rock2 = MeshInstance3D.new()
+	rock2.mesh = rock_mesh
+	rock2.position = Vector3(-4, 4, -2)
+	rock2.scale = Vector3(0.7, 0.7, 0.7)
+	add_child(rock2)
 	
 	print("[FloatingIslandLoader] ✅ Fallback island created!")
 	island_loaded = true 
