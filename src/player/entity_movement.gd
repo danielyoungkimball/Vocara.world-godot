@@ -136,10 +136,10 @@ func update_ground_state():
 		is_grounded = new_grounded
 		ground_state_changed.emit(is_grounded)
 		
-		if is_grounded:
-			print("[EntityMovement] Entity grounded at ", ground_contact_point)
-		else:
-			print("[EntityMovement] Entity airborne")
+		#if is_grounded:
+			#print("[EntityMovement] Entity grounded at ", ground_contact_point)
+		#else:
+			#print("[EntityMovement] Entity airborne")
 
 func handle_gravity(delta: float):
 	if not gravity_enabled:
@@ -175,7 +175,7 @@ func handle_navigation_boundaries(delta: float):
 	if was_on_nav_mesh and not is_on_nav_mesh:
 		# Store the closest point on the navigation mesh as the edge position
 		edge_fall_position = closest_nav_point
-		print("[EntityMovement] Player left navigation mesh, edge position: ", edge_fall_position)
+		#print("[EntityMovement] Player left navigation mesh, edge position: ", edge_fall_position)
 		left_navigation_region.emit()
 	
 	# Check if we're off the navigation mesh
@@ -183,7 +183,7 @@ func handle_navigation_boundaries(delta: float):
 		off_nav_timer += delta
 		
 		if off_nav_timer > max_off_nav_time and auto_return_to_nav:
-			print("[EntityMovement] Auto-returning to navigation mesh")
+			#print("[EntityMovement] Auto-returning to navigation mesh")
 			return_to_navigation_mesh()
 	else:
 		if off_nav_timer > 0.0:
@@ -202,23 +202,23 @@ func handle_void_detection():
 	
 	# Check if entity has fallen into the void
 	if current_pos.y <= void_y_threshold:
-		print("[EntityMovement] Entity fell into void at Y=", current_pos.y)
+		#print("[EntityMovement] Entity fell into void at Y=", current_pos.y)
 		fell_into_void.emit()
 		recover_from_void()
 
 func recover_from_void():
-	print("[EntityMovement] Recovering from void...")
+	#print("[EntityMovement] Recovering from void...")
 	
 	var recovery_position = Vector3.ZERO
 	
 	# First priority: respawn at the edge where they fell off
 	if edge_fall_position != Vector3.ZERO:
 		recovery_position = edge_fall_position
-		print("[EntityMovement] Using edge fall position: ", recovery_position)
+		#print("[EntityMovement] Using edge fall position: ", recovery_position)
 	else:
 		# Fallback: use last valid navigation position
 		recovery_position = last_valid_nav_position
-		print("[EntityMovement] Using last valid nav position: ", recovery_position)
+		#print("[EntityMovement] Using last valid nav position: ", recovery_position)
 	
 	# Ensure the recovery position is safe and on the navigation mesh
 	var safe_recovery = find_safe_position_near(recovery_position)
@@ -242,10 +242,10 @@ func recover_from_void():
 		last_valid_nav_position = recovery_position
 		was_on_nav_mesh = true
 		
-		print("[EntityMovement] Recovered from void at: ", recovery_position)
+		#print("[EntityMovement] Recovered from void at: ", recovery_position)
 		recovered_from_void.emit(recovery_position)
 	else:
-		print("[EntityMovement] CRITICAL: Could not find recovery position from void!")
+		#print("[EntityMovement] CRITICAL: Could not find recovery position from void!")
 		# Last resort: place at world origin and hope for the best
 		entity.global_position = Vector3(0, 10, 0)
 		entity.velocity = Vector3.ZERO
@@ -265,15 +265,15 @@ func return_to_navigation_mesh():
 			entity.global_position = safe_position
 			entity.velocity = Vector3.ZERO
 			off_nav_timer = 0.0
-			print("[EntityMovement] Returned to navigation mesh at ", safe_position)
-		else:
-			print("[EntityMovement] Failed to find safe return position")
+			# print("[EntityMovement] Returned to navigation mesh at ", safe_position)
+		# else:
+			# print("[EntityMovement] Failed to find safe return position")
 	else:
 		# Just slightly adjust position towards navigation mesh, don't teleport
 		var closest_nav_point = get_closest_nav_point(entity.global_position)
 		var direction = (closest_nav_point - entity.global_position).normalized()
 		entity.global_position += direction * 0.1  # Small nudge
-		print("[EntityMovement] Nudged towards navigation mesh")
+		# print("[EntityMovement] Nudged towards navigation mesh")
 
 func find_safe_position_near(center: Vector3) -> Vector3:
 	# Try center first
@@ -334,25 +334,25 @@ func ensure_safe_spawn_position():
 	
 	# Only move entity if it's in a truly dangerous position (void)
 	if current_pos.y < void_y_threshold:
-		print("[EntityMovement] Entity spawned in void, moving to safe position...")
+		# print("[EntityMovement] Entity spawned in void, moving to safe position...")
 		
 		# Try to find a safe position
 		var safe_pos = find_safe_position_near(current_pos)
 		if safe_pos != Vector3.ZERO:
 			entity.global_position = safe_pos
-			print("[EntityMovement] Moved to safe spawn position: ", safe_pos)
+			# print("[EntityMovement] Moved to safe spawn position: ", safe_pos)
 		else:
 			# Last resort: get closest nav point and place on ground
 			var nav_point = get_closest_nav_point(current_pos)
 			var ground_pos = get_ground_position(nav_point)
 			if ground_pos != Vector3.ZERO:
 				entity.global_position = ground_pos
-				print("[EntityMovement] Emergency spawn at ground position: ", ground_pos)
-			else:
-				print("[EntityMovement] WARNING: Could not find safe spawn position!")
-	else:
+				# print("[EntityMovement] Emergency spawn at ground position: ", ground_pos)
+			# else:
+				# print("[EntityMovement] WARNING: Could not find safe spawn position!")
+	# else:
 		# Entity is above void threshold, let it fall naturally
-		print("[EntityMovement] Entity at valid Y position (", current_pos.y, "), allowing natural fall")
+		# print("[EntityMovement] Entity at valid Y position (", current_pos.y, "), allowing natural fall")
 
 func get_ground_position(position: Vector3) -> Vector3:
 	var space_state = entity.get_world_3d().direct_space_state
@@ -395,7 +395,7 @@ func handle_collision_recovery(delta: float):
 		unstuck_attempts = 0
 
 func attempt_unstuck():
-	print("[EntityMovement] Stuck detected, attempting recovery (", unstuck_attempts + 1, "/", max_unstuck_attempts, ")")
+	# print("[EntityMovement] Stuck detected, attempting recovery (", unstuck_attempts + 1, "/", max_unstuck_attempts, ")")
 	
 	match unstuck_attempts:
 		0:
@@ -425,7 +425,7 @@ func validate_dash_destination(destination: Vector3) -> Vector3:
 	# Allow dashing off the edge - players can fall and will be respawned
 	# Only prevent dashing directly into the void (way below the map)
 	if destination.y <= void_y_threshold:
-		print("[EntityMovement] Dash destination rejected: would fall into void")
+		# print("[EntityMovement] Dash destination rejected: would fall into void")
 		return entity.global_position
 	
 	# Check if destination has ground - if not, that's okay, they'll fall and respawn
@@ -453,7 +453,7 @@ func force_ground_snap():
 	if ground_pos != Vector3.ZERO:
 		entity.global_position = ground_pos
 		entity.velocity.y = 0.0
-		print("[EntityMovement] Force snapped to ground at ", ground_pos)
+		# print("[EntityMovement] Force snapped to ground at ", ground_pos)
 
 func teleport_to_safe_position(position: Vector3):
 	"""Teleport entity to a safe position"""
@@ -463,14 +463,14 @@ func teleport_to_safe_position(position: Vector3):
 		entity.velocity = Vector3.ZERO
 		last_position = safe_pos
 		last_valid_nav_position = safe_pos
-		print("[EntityMovement] Teleported to safe position: ", safe_pos)
-	else:
-		print("[EntityMovement] Failed to find safe teleport position")
+		# print("[EntityMovement] Teleported to safe position: ", safe_pos)
+	# else:
+		# print("[EntityMovement] Failed to find safe teleport position")
 
 func set_void_threshold(threshold: float):
 	"""Set the void Y threshold for this map"""
 	void_y_threshold = threshold
-	print("[EntityMovement] Void threshold set to: ", threshold)
+	# print("[EntityMovement] Void threshold set to: ", threshold)
 
 func get_void_threshold() -> float:
 	"""Get the current void Y threshold"""
@@ -486,11 +486,11 @@ func add_vertical_impulse(force: float, require_grounded: bool = true):
 		return
 	
 	entity.velocity.y += force
-	print("[EntityMovement] Added vertical impulse: ", force)
+	# print("[EntityMovement] Added vertical impulse: ", force)
 
 func debug_trigger_void_recovery():
 	"""Debug function to test void recovery system"""
-	print("[EntityMovement] DEBUG: Triggering void recovery")
+	# print("[EntityMovement] DEBUG: Triggering void recovery")
 	recover_from_void()
 
 func debug_show_edge_position():

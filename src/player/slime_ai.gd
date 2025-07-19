@@ -61,7 +61,7 @@ func _ready():
 	# Wait a frame for navigation to be ready
 	await get_tree().process_frame
 	
-	print("[SLIME] Ready to bounce! Spawn position: ", spawn_position)
+	#print("[SLIME] Ready to bounce! Spawn position: ", spawn_position)
 
 func _physics_process(delta: float) -> void:
 	_update_state(delta)
@@ -112,7 +112,7 @@ func _enter_idle_state() -> void:
 	idle_timer = 0.0
 	current_speed = 0.0
 	movement_direction = Vector3.ZERO
-	print("[SLIME] Entering idle state")
+	#print("[SLIME] Entering idle state")
 
 func _enter_wandering_state() -> void:
 	current_state = SlimeState.WANDERING
@@ -120,7 +120,7 @@ func _enter_wandering_state() -> void:
 	direction_timer = 0.0
 	current_speed = WANDER_SPEED
 	_pick_new_wander_target()
-	print("[SLIME] Starting to wander")
+	#print("[SLIME] Starting to wander")
 
 func _enter_jumping_state() -> void:
 	current_state = SlimeState.JUMPING
@@ -149,7 +149,7 @@ func _enter_jumping_state() -> void:
 	# Face the jump direction
 	_face_direction(jump_direction, 0.1)
 	
-	print("[SLIME] *BOING!* Jumping with forward momentum!")
+	#print("[SLIME] *BOING!* Jumping with forward momentum!")
 
 func _enter_squishing_state() -> void:
 	current_state = SlimeState.SQUISHING
@@ -157,7 +157,7 @@ func _enter_squishing_state() -> void:
 	squish_timer = 0.0
 	current_speed = 0.0
 	movement_direction = Vector3.ZERO
-	print("[SLIME] *squish* Landing!")
+	#print("[SLIME] *squish* Landing!")
 
 func _pick_new_wander_target() -> void:
 	# Pick a random position within wander range of spawn
@@ -172,7 +172,7 @@ func _pick_new_wander_target() -> void:
 	# Use NavigationAgent3D to find path to target
 	navigation_agent_3d.set_target_position(target_position)
 	
-	print("[SLIME] Picked new target: ", target_position)
+	#print("[SLIME] Picked new target: ", target_position)
 
 func _handle_movement(delta: float) -> void:
 	if current_state == SlimeState.WANDERING:
@@ -246,7 +246,7 @@ func _handle_animation(delta: float) -> void:
 # Signal handlers
 func _on_ground_state_changed(grounded: bool) -> void:
 	is_grounded = grounded
-	print("[SLIME] Ground state changed: ", grounded)
+	#print("[SLIME] Ground state changed: ", grounded)
 
 # Utility functions
 func get_distance_from_spawn() -> float:

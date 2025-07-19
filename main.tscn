@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://cmriaa136qhtl"]
+[gd_scene load_steps=11 format=3 uid="uid://cmriaa136qhtl"]
 
 [ext_resource type="PackedScene" uid="uid://dhgsi2agp1m" path="res://scenes/environments/world.tscn" id="1_ig7tw"]
 [ext_resource type="PackedScene" uid="uid://bgrrhlwuly4jf" path="res://scenes/characters/player.tscn" id="2_h2yge"]
@@ -6,6 +6,7 @@
 [ext_resource type="Texture2D" uid="uid://beu14a0v5nffy" path="res://src/camera/target_indicator-Sheet.png" id="4_lquwl"]
 [ext_resource type="Script" uid="uid://bud1wg24vpimt" path="res://src/camera/target_indicator.gd" id="5_7mycd"]
 [ext_resource type="Script" uid="uid://c581l0rd4xce7" path="res://src/assets/AssetStreamer.gd" id="6_asset"]
+[ext_resource type="Script" uid="uid://bsdklpse5ws8f" path="res://src/core/GlobalAssetManager.gd" id="7_global_asset"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_0xm2m"]
 sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
@@ -49,3 +50,6 @@ script = ExtResource("5_7mycd")
 
 [node name="AssetStreamer" type="Node" parent="."]
 script = ExtResource("6_asset")
+
+[node name="GlobalAssetManager" type="Node" parent="."]
+script = ExtResource("7_global_asset")

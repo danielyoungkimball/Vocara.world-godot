@@ -1,290 +1,449 @@
 extends Node
 
-## Global Asset Manager
-## Automatically handles large asset streaming for web builds using node groups
+## Global Asset Manager - Enhanced Stream Orchestrator
+## Seamlessly handles both bundled (res://) and streamed assets
+## Automatically detects nodes tagged for streaming and manages their asset loading
 ## 
 ## Usage:
-## 1. Add large asset nodes to the "large_asset_stream" group
-## 2. Set node metadata: set_meta("asset_path", "floating_island.glb")
-## 3. System automatically handles streaming for web builds
-## 4. Desktop builds work normally
+## 1. Add nodes to the "large_asset_stream" group for automatic streaming
+## 2. Set node metadata: set_meta("asset_path", "models/environment/floating_island.glb")
+## 3. System handles the rest automatically - no code changes needed!
 
+signal streaming_initialized()
 signal asset_stream_started(node_name: String, asset_path: String)
 signal asset_stream_completed(node_name: String, success: bool)
-signal asset_stream_error(node_name: String, error: String)
+signal asset_stream_error(node_name: String, error_message: String)
+signal all_streaming_assets_ready()
 
-# Asset registry mapping node names to streaming info
-var asset_registry = {}
-var asset_streamer: Node = null
-var is_web_build: bool = false
+# Configuration
+@export var enable_streaming: bool = true
+@export var auto_process_on_ready: bool = true
+@export var show_streaming_progress: bool = true
+
+# Asset streaming state
+var asset_streamer: Node
+var streaming_nodes: Dictionary = {}  # node_path -> asset_info
+var node_references: Dictionary = {}  # node_path -> node_reference
+var pending_streams: Array = []
+var completed_streams: int = 0
+var total_streams: int = 0
+var is_initialized: bool = false
+
+# Scene integration
+var original_meshes: Dictionary = {}  # node -> original_mesh_path (deprecated)
+var placeholder_scenes: Dictionary = {} # node -> placeholder_resource
 
 func _ready():
 	name = "GlobalAssetManager"
 	
-	# Check if we're in a web build
-	is_web_build = OS.has_feature("web")
-	
-	print("[GlobalAssetManager] Initializing - Web build: ", is_web_build)
-	
-	# Wait for scene tree to be ready
+	# Wait a frame for scene tree to fully initialize
 	await get_tree().process_frame
 	
-	if is_web_build:
-		_initialize_web_streaming()
-	else:
-		print("[GlobalAssetManager] Desktop build - asset streaming disabled")
-
-func _initialize_web_streaming():
-	"""Initialize asset streaming for web builds"""
-	print("[GlobalAssetManager] Initializing web asset streaming...")
+	# Find the AssetStreamer
+	asset_streamer = get_node_or_null("/root/Main/AssetStreamer")
+	if not asset_streamer:
+		print("[GlobalAssetManager] ERROR: AssetStreamer not found!")
+		return
 	
-	# Find or create AssetStreamer
-	asset_streamer = _find_or_create_asset_streamer()
+	# Connect to AssetStreamer signals
+	asset_streamer.connect("asset_ready", _on_asset_ready)
+	asset_streamer.connect("asset_failed", _on_asset_failed)
+	asset_streamer.connect("streaming_error", _on_streaming_error)
+	
+	if auto_process_on_ready:
+		call_deferred("initialize_streaming")
+
+func initialize_streaming():
+	"""Initialize the streaming system and scan for assets"""
+	if is_initialized:
+		print("[GlobalAssetManager] Already initialized")
+		return
+	
+	print("[GlobalAssetManager] Initializing asset streaming system...")
+	
+	# Check if we're in a web build (streaming enabled)
+	var is_web_build = OS.has_feature("web")
+	
+	if not enable_streaming or not is_web_build:
+		print("[GlobalAssetManager] Streaming disabled or not web build, using bundled assets")
+		is_initialized = true
+		streaming_initialized.emit()
+		return
+	
+	# Scan scene tree for streaming assets
+	_scan_streaming_assets()
+	
+	if total_streams == 0:
+		print("[GlobalAssetManager] No streaming assets found")
+		is_initialized = true
+		streaming_initialized.emit()
+		all_streaming_assets_ready.emit()
+	else:
+		print("[GlobalAssetManager] Found ", total_streams, " streaming assets to load")
+		_start_streaming_process()
+	
+	is_initialized = true
+	streaming_initialized.emit()
+
+func _scan_streaming_assets():
+	"""Scan the scene tree for nodes tagged for streaming"""
+	streaming_nodes.clear()
+	node_references.clear()
+	pending_streams.clear()
+	completed_streams = 0
+	total_streams = 0
+	
+	# Find all nodes in the "large_asset_stream" group
+	var streaming_group = get_tree().get_nodes_in_group("large_asset_stream")
+	
+	for node in streaming_group:
+		var asset_path = node.get_meta("asset_path", "")
+		
+		if asset_path.is_empty():
+			print("[GlobalAssetManager] WARNING: Node ", node.name, " in streaming group but no asset_path metadata")
+			continue
+		
+		print("[GlobalAssetManager] Found streaming asset: ", node.name, " -> ", asset_path)
+		
+		# Use node path as consistent key
+		var node_path = node.get_path()
+		
+		# Store the asset info using node path as key
+		streaming_nodes[node_path] = {
+			"asset_path": asset_path,
+			"node_name": node.name,
+			"node_path": node_path,
+			"original_scene": null,
+			"is_loaded": false
+		}
+		
+		# Store node reference separately
+		node_references[node_path] = node
+		
+		pending_streams.append(node_path)
+		total_streams += 1
+		
+		# Replace with placeholder if needed
+		_setup_placeholder_for_node(node)
+
+func _setup_placeholder_for_node(node: Node):
+	"""Set up a placeholder for a node while its asset loads"""
+	if not node.has_method("set_visible"):
+		return
+	
+	# For 3D nodes, we can make them invisible or replace with a simple placeholder
+	if node is Node3D:
+		# Store original visibility
+		var node_path = node.get_path()
+		var asset_info = streaming_nodes[node_path]
+		asset_info["original_visible"] = node.visible
+		
+		# Create a simple placeholder (optional)
+		if show_streaming_progress:
+			_create_loading_placeholder(node)
+		else:
+			node.visible = false
+
+func _create_loading_placeholder(node: Node3D):
+	"""Create a visual loading placeholder for 3D nodes"""
+	var placeholder = MeshInstance3D.new()
+	placeholder.name = node.name + "_Loading_Placeholder"
+	
+	# Create a simple spinning cube to indicate loading
+	var mesh = BoxMesh.new()
+	mesh.size = Vector3(1, 1, 1)
+	placeholder.mesh = mesh
+	
+	# Add a material that indicates loading
+	var material = StandardMaterial3D.new()
+	material.albedo_color = Color(0.5, 0.8, 1.0, 0.7)
+	material.emission_enabled = true
+	material.emission = Color(0.3, 0.6, 1.0, 1)
+	material.emission_energy = 0.3
+	placeholder.material_override = material
+	
+	# Add to the same parent
+	if node.get_parent():
+		node.get_parent().add_child(placeholder)
+		placeholder.global_transform = node.global_transform
+		
+		# Store reference for cleanup
+		placeholder_scenes[node] = placeholder
+		
+		# Simple rotation animation
+		var tween = get_tree().create_tween()
+		tween.set_loops()
+		tween.tween_property(placeholder, "rotation", Vector3(0, TAU, 0), 2.0)
+
+func _start_streaming_process():
+	"""Start loading all streaming assets"""
+	print("[GlobalAssetManager] Starting asset streaming process...")
+	
+	# Ensure we have a valid AssetStreamer reference
+	_ensure_asset_streamer_reference()
+	
+	for node_path in pending_streams:
+		var asset_info = streaming_nodes[node_path]
+		var asset_path = asset_info.asset_path
+		
+		print("[GlobalAssetManager] Requesting asset: ", asset_path, " for node: ", asset_info.node_name)
+		asset_stream_started.emit(asset_info.node_name, asset_path)
+		
+		# Request the asset from AssetStreamer
+		asset_streamer.request_asset(asset_path, "high")
+
+func _on_asset_ready(asset_identifier: String, resource: Resource):
+	"""Handle asset successfully loaded"""
+	print("[GlobalAssetManager] Asset ready: ", asset_identifier)
+	
+	# Find the node path(s) waiting for this asset
+	var node_paths_for_asset = _find_nodes_for_asset(asset_identifier)
+	
+	for node_path in node_paths_for_asset:
+		var node = node_references.get(node_path)
+		if not node or not is_instance_valid(node):
+			print("[GlobalAssetManager] WARNING: Node reference lost for path: ", node_path)
+			continue
+			
+		_apply_asset_to_node(node, resource)
+		
+		var asset_info = streaming_nodes[node_path]
+		asset_info.is_loaded = true
+		completed_streams += 1
+		
+		asset_stream_completed.emit(asset_info.node_name, true)
+		print("[GlobalAssetManager] ✅ Asset applied to node: ", asset_info.node_name)
+	
+	_check_streaming_completion()
+
+func _on_asset_failed(asset_identifier: String, fallback_resource: Resource):
+	"""Handle asset loading failed but with fallback"""
+	print("[GlobalAssetManager] Asset failed but fallback available: ", asset_identifier)
+	
+	var node_paths_for_asset = _find_nodes_for_asset(asset_identifier)
+	
+	for node_path in node_paths_for_asset:
+		var node = node_references.get(node_path)
+		if not node or not is_instance_valid(node):
+			print("[GlobalAssetManager] WARNING: Node reference lost for path: ", node_path)
+			completed_streams += 1
+			continue
+			
+		if fallback_resource:
+			_apply_asset_to_node(node, fallback_resource)
+		
+		var asset_info = streaming_nodes[node_path]
+		asset_info.is_loaded = true
+		completed_streams += 1
+		
+		asset_stream_completed.emit(asset_info.node_name, false)
+		print("[GlobalAssetManager] ⚠️ Fallback applied to node: ", asset_info.node_name)
+	
+	_check_streaming_completion()
+
+func _on_streaming_error(asset_identifier: String, error_message: String):
+	"""Handle complete asset loading failure"""
+	print("[GlobalAssetManager] Asset streaming error: ", asset_identifier, " - ", error_message)
+	
+	var node_paths_for_asset = _find_nodes_for_asset(asset_identifier)
+	
+	for node_path in node_paths_for_asset:
+		var asset_info = streaming_nodes[node_path]
+		completed_streams += 1
+		
+		asset_stream_error.emit(asset_info.node_name, error_message)
+		print("[GlobalAssetManager] ❌ Asset failed for node: ", asset_info.node_name)
+	
+	_check_streaming_completion()
+
+func _find_nodes_for_asset(asset_identifier: String) -> Array:
+	"""Find all node paths waiting for a specific asset"""
+	var matching_node_paths = []
+	
+	for node_path in streaming_nodes:
+		var asset_info = streaming_nodes[node_path]
+		if asset_info.asset_path == asset_identifier or asset_info.asset_path.get_file() == asset_identifier.get_file():
+			matching_node_paths.append(node_path)
+	
+	return matching_node_paths
+
+func _apply_asset_to_node(node: Node, resource: Resource):
+	"""Apply a loaded resource to its target node"""
+	# Clean up placeholder first
+	_cleanup_placeholder(node)
+	
+	# Apply the resource based on node and resource type
+	if resource is PackedScene:
+		_apply_scene_to_node(node, resource)
+	elif resource is Mesh and node is MeshInstance3D:
+		_apply_mesh_to_node(node, resource)
+	elif resource is Texture2D:
+		_apply_texture_to_node(node, resource)
+	elif resource is AudioStream and node.has_method("set_stream"):
+		node.set_stream(resource)
+	else:
+		print("[GlobalAssetManager] WARNING: Don't know how to apply resource type ", resource.get_class(), " to node ", node.name)
+
+func _apply_scene_to_node(node: Node, scene: PackedScene):
+	"""Replace a node with a loaded scene"""
+	var parent = node.get_parent()
+	if not parent:
+		print("[GlobalAssetManager] WARNING: Cannot replace node without parent: ", node.name)
+		return
+	
+	# Get the old node path for updating our references
+	var old_node_path = node.get_path()
+	
+	# Instance the new scene
+	var new_instance = scene.instantiate()
+	if not new_instance:
+		print("[GlobalAssetManager] ERROR: Failed to instantiate scene for ", node.name)
+		return
+	
+	# Copy transform and other properties
+	if node is Node3D and new_instance is Node3D:
+		new_instance.global_transform = node.global_transform
+	
+	# Copy name and metadata
+	new_instance.name = node.name
+	for meta_key in node.get_meta_list():
+		new_instance.set_meta(meta_key, node.get_meta(meta_key))
+	
+	# Replace in scene tree
+	var node_index = node.get_index()
+	parent.remove_child(node)
+	parent.add_child(new_instance)
+	parent.move_child(new_instance, node_index)
+	
+	# Update node reference (path should be the same since name is the same)
+	node_references[old_node_path] = new_instance
+	
+	print("[GlobalAssetManager] Scene applied and node replaced: ", new_instance.name)
+
+func _apply_mesh_to_node(node: MeshInstance3D, mesh: Mesh):
+	"""Apply a mesh to a MeshInstance3D node"""
+	node.mesh = mesh
+	node.visible = true
+	print("[GlobalAssetManager] Mesh applied to: ", node.name)
+
+func _apply_texture_to_node(node: Node, texture: Texture2D):
+	"""Apply a texture to an appropriate node"""
+	if node.has_method("set_texture"):
+		node.set_texture(texture)
+	elif node is MeshInstance3D and node.get_surface_override_material(0):
+		var material = node.get_surface_override_material(0)
+		if material.has_property("texture_albedo"):
+			material.texture_albedo = texture
+	else:
+		print("[GlobalAssetManager] WARNING: Don't know how to apply texture to node: ", node.name)
+
+func _cleanup_placeholder(node: Node):
+	"""Clean up loading placeholder for a node"""
+	if placeholder_scenes.has(node):
+		var placeholder = placeholder_scenes[node]
+		if placeholder and is_instance_valid(placeholder):
+			placeholder.queue_free()
+		placeholder_scenes.erase(node)
+	
+	# Restore original visibility
+	if node is Node3D:
+		var node_path = node.get_path()
+		if streaming_nodes.has(node_path):
+			var asset_info = streaming_nodes[node_path]
+			if asset_info.has("original_visible"):
+				node.visible = asset_info.original_visible
+
+func _check_streaming_completion():
+	"""Check if all streaming assets are complete"""
+	if completed_streams >= total_streams:
+		print("[GlobalAssetManager] ✅ All streaming assets loaded! (", completed_streams, "/", total_streams, ")")
+		all_streaming_assets_ready.emit()
+
+func _ensure_asset_streamer_reference():
+	"""Ensure we have a valid AssetStreamer reference, reacquire if necessary"""
+	if not asset_streamer or not is_instance_valid(asset_streamer):
+		print("[GlobalAssetManager] AssetStreamer reference lost, reacquiring...")
+		asset_streamer = get_node_or_null("/root/Main/AssetStreamer")
+		
+		if not asset_streamer:
+			print("[GlobalAssetManager] ERROR: Cannot find AssetStreamer!")
+			return
+		
+		# Reconnect signals if we had to reacquire
+		if not asset_streamer.is_connected("asset_ready", _on_asset_ready):
+			asset_streamer.connect("asset_ready", _on_asset_ready)
+			asset_streamer.connect("asset_failed", _on_asset_failed)
+			asset_streamer.connect("streaming_error", _on_streaming_error)
+			print("[GlobalAssetManager] ✅ AssetStreamer reference restored and signals reconnected")
+		else:
+			print("[GlobalAssetManager] ✅ AssetStreamer reference restored")
+
+# ===== PUBLIC API =====
+
+func request_additional_asset(asset_path: String, priority: String = "medium"):
+	"""Request an additional asset outside of the automatic system"""
+	_ensure_asset_streamer_reference()
 	
 	if not asset_streamer:
-		print("[GlobalAssetManager] ERROR: Could not initialize AssetStreamer")
+		print("[GlobalAssetManager] ERROR: AssetStreamer not available")
 		return
 	
-	# Connect signals
-	asset_streamer.asset_loaded.connect(_on_asset_loaded)
-	asset_streamer.asset_download_started.connect(_on_asset_download_started)
-	asset_streamer.asset_download_completed.connect(_on_asset_download_completed)
-	asset_streamer.streaming_error.connect(_on_asset_streaming_error)
-	
-	# Scan for tagged assets
-	_scan_and_process_tagged_assets()
+	print("[GlobalAssetManager] Requesting additional asset: ", asset_path)
+	asset_streamer.request_asset(asset_path, priority)
 
-func _find_or_create_asset_streamer() -> Node:
-	"""Find existing AssetStreamer or create new one"""
-	
-	# First try to find existing AssetStreamer
-	var streamer = get_tree().get_first_node_in_group("asset_streamer")
-	
-	if streamer:
-		print("[GlobalAssetManager] Found existing AssetStreamer")
-		return streamer
-	
-	# Create new AssetStreamer
-	var asset_streamer_script = load("res://src/assets/AssetStreamer.gd")
-	
-	if not asset_streamer_script:
-		print("[GlobalAssetManager] ERROR: Could not load AssetStreamer script")
-		return null
-	
-	streamer = Node.new()
-	streamer.set_script(asset_streamer_script)
-	streamer.name = "AssetStreamer"
-	streamer.add_to_group("asset_streamer")
-	
-	# Add to scene tree
-	get_tree().root.add_child(streamer)
-	
-	print("[GlobalAssetManager] Created new AssetStreamer")
-	return streamer
+func is_streaming_complete() -> bool:
+	"""Check if all streaming is complete"""
+	return completed_streams >= total_streams and is_initialized
 
-func _scan_and_process_tagged_assets():
-	"""Scan all scenes for nodes tagged with large_asset_stream"""
-	print("[GlobalAssetManager] Scanning for tagged assets...")
+func get_streaming_progress() -> float:
+	"""Get current streaming progress (0.0 to 1.0)"""
+	if total_streams == 0:
+		return 1.0
 	
-	var tagged_nodes = get_tree().get_nodes_in_group("large_asset_stream")
-	
-	if tagged_nodes.is_empty():
-		print("[GlobalAssetManager] No tagged assets found")
-		return
-	
-	print("[GlobalAssetManager] Found ", tagged_nodes.size(), " tagged assets")
-	
-	# Process each tagged asset
-	for node in tagged_nodes:
-		_process_tagged_asset(node)
+	return float(completed_streams) / float(total_streams)
 
-func _process_tagged_asset(node: Node):
-	"""Process a single tagged asset node"""
-	var asset_path = node.get_meta("asset_path", "")
-	
-	if asset_path.is_empty():
-		print("[GlobalAssetManager] WARNING: Node '", node.name, "' in large_asset_stream group has no asset_path metadata")
-		return
-	
-	print("[GlobalAssetManager] Processing tagged asset: ", node.name, " -> ", asset_path)
-	
-	# Store in registry
-	asset_registry[node.name] = {
-		"node": node,
-		"asset_path": asset_path,
-		"original_children": [],
-		"loading_indicator": null
-	}
-	
-	# Replace with loading indicator
-	_replace_with_loading_indicator(node, asset_path)
-	
-	# Start streaming
-	_start_asset_streaming(node.name, asset_path)
-
-func _replace_with_loading_indicator(node: Node, asset_path: String):
-	"""Replace asset content with loading indicator"""
-	var registry_entry = asset_registry[node.name]
-	
-	# Store original children
-	for child in node.get_children():
-		if child.name != "AssetStreamer":  # Don't store AssetStreamer
-			registry_entry.original_children.append(child)
-			child.queue_free()
-	
-	# Create loading indicator
-	var loading_indicator = _create_loading_indicator(asset_path)
-	node.add_child(loading_indicator)
-	
-	registry_entry.loading_indicator = loading_indicator
-	
-	print("[GlobalAssetManager] Replaced '", node.name, "' content with loading indicator")
-
-func _create_loading_indicator(asset_path: String) -> Node3D:
-	"""Create a visual loading indicator"""
-	var indicator = MeshInstance3D.new()
-	indicator.name = "LoadingIndicator"
-	
-	# Create glowing sphere
-	var sphere_mesh = SphereMesh.new()
-	sphere_mesh.radius = 5.0
-	sphere_mesh.height = 10.0
-	indicator.mesh = sphere_mesh
-	
-	# Create glowing material
-	var material = StandardMaterial3D.new()
-	material.albedo_color = Color(0.2, 0.8, 1.0, 0.7)
-	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.emission_enabled = true
-	material.emission = Color(0.4, 0.9, 1.0)
-	material.emission_energy = 2.0
-	indicator.material_override = material
-	
-	# Add floating animation
-	var tween = create_tween()
-	tween.set_loops()
-	tween.parallel().tween_method(func(y): indicator.position.y = y, 0.0, 2.0, 1.5)
-	tween.parallel().tween_method(func(angle): indicator.rotation_y = angle, 0.0, TAU, 2.0)
-	tween.tween_method(func(y): indicator.position.y = y, 2.0, 0.0, 1.5)
-	
-	return indicator
-
-func _start_asset_streaming(node_name: String, asset_path: String):
-	"""Start streaming an asset"""
-	print("[GlobalAssetManager] Starting stream for: ", asset_path)
-	
-	emit_signal("asset_stream_started", node_name, asset_path)
-	
-	# Request asset from streamer
-	var already_loaded = asset_streamer.request_asset(asset_path, "critical")
-	
-	if already_loaded:
-		print("[GlobalAssetManager] Asset already available: ", asset_path)
-
-# AssetStreamer signal handlers
-func _on_asset_download_started(asset_path: String):
-	print("[GlobalAssetManager] Download started: ", asset_path)
-
-func _on_asset_download_completed(asset_path: String, success: bool):
-	print("[GlobalAssetManager] Download completed: ", asset_path, " (success: ", success, ")")
-	
-	if not success:
-		# Find node for this asset
-		for node_name in asset_registry:
-			if asset_registry[node_name].asset_path == asset_path:
-				_handle_streaming_failure(node_name)
-				break
-
-func _on_asset_loaded(asset_path: String, resource: Resource):
-	print("[GlobalAssetManager] Asset loaded: ", asset_path)
-	
-	# Find node for this asset
-	for node_name in asset_registry:
-		if asset_registry[node_name].asset_path == asset_path:
-			_replace_with_streamed_asset(node_name, resource)
-			break
-
-func _on_asset_streaming_error(error: String):
-	print("[GlobalAssetManager] Streaming error: ", error)
-
-func _replace_with_streamed_asset(node_name: String, resource: Resource):
-	"""Replace loading indicator with streamed asset"""
-	var registry_entry = asset_registry[node_name]
-	var node = registry_entry.node
-	
-	# Remove loading indicator
-	if registry_entry.loading_indicator:
-		registry_entry.loading_indicator.queue_free()
-	
-	# Instantiate streamed asset
-	var asset_instance = resource.instantiate()
-	
-	if not asset_instance:
-		print("[GlobalAssetManager] ERROR: Failed to instantiate asset for: ", node_name)
-		_handle_streaming_failure(node_name)
-		return
-	
-	# Add to node
-	node.add_child(asset_instance)
-	
-	print("[GlobalAssetManager] ✅ Successfully replaced '", node_name, "' with streamed asset")
-	emit_signal("asset_stream_completed", node_name, true)
-
-func _handle_streaming_failure(node_name: String):
-	"""Handle asset streaming failure"""
-	print("[GlobalAssetManager] Handling streaming failure for: ", node_name)
-	
-	var registry_entry = asset_registry[node_name]
-	var node = registry_entry.node
-	
-	# Remove loading indicator
-	if registry_entry.loading_indicator:
-		registry_entry.loading_indicator.queue_free()
-	
-	# Create fallback content
-	var fallback = _create_fallback_content(node_name)
-	node.add_child(fallback)
-	
-	emit_signal("asset_stream_completed", node_name, false)
-	emit_signal("asset_stream_error", node_name, "Failed to stream asset")
-
-func _create_fallback_content(node_name: String) -> Node3D:
-	"""Create fallback content when streaming fails"""
-	var fallback = MeshInstance3D.new()
-	fallback.name = "FallbackContent"
-	
-	# Create a simple geometric shape based on asset type
-	var mesh = CylinderMesh.new()
-	mesh.top_radius = 8.0
-	mesh.bottom_radius = 6.0
-	mesh.height = 5.0
-	fallback.mesh = mesh
-	
-	# Create material
-	var material = StandardMaterial3D.new()
-	material.albedo_color = Color(0.6, 0.4, 0.2)  # Brownish fallback
-	material.roughness = 0.8
-	fallback.material_override = material
-	
-	return fallback
-
-# Public API
-func register_asset_manually(node: Node, asset_path: String):
-	"""Manually register a node for asset streaming"""
-	node.set_meta("asset_path", asset_path)
-	node.add_to_group("large_asset_stream")
-	
-	if is_web_build:
-		_process_tagged_asset(node)
-
-func get_streaming_status(node_name: String) -> Dictionary:
-	"""Get streaming status for a node"""
-	if not asset_registry.has(node_name):
-		return {"status": "not_found"}
-	
-	var entry = asset_registry[node_name]
+func get_streaming_status() -> Dictionary:
+	"""Get detailed streaming status"""
 	return {
-		"status": "registered",
-		"asset_path": entry.asset_path,
-		"has_loading_indicator": entry.loading_indicator != null
-	} 
+		"is_initialized": is_initialized,
+		"total_streams": total_streams,
+		"completed_streams": completed_streams,
+		"pending_streams": pending_streams.size(),
+		"progress": get_streaming_progress(),
+		"is_complete": is_streaming_complete(),
+		"streaming_enabled": enable_streaming
+	}
+
+func preload_critical_assets():
+	"""Preload assets marked as critical priority"""
+	if not asset_streamer:
+		return
+	
+	# Request critical assets based on scene analysis
+	# This can be extended to analyze the current scene and preload important assets
+	print("[GlobalAssetManager] Preloading critical assets...")
+
+# ===== DEBUGGING AND TESTING =====
+
+func debug_print_streaming_nodes():
+	"""Debug function to print all streaming nodes"""
+	print("[GlobalAssetManager] === STREAMING NODES DEBUG ===")
+	for node_path in streaming_nodes:
+		var info = streaming_nodes[node_path]
+		print("Path: ", node_path, " | Node: ", info.node_name, " | Asset: ", info.asset_path, " | Loaded: ", info.is_loaded)
+	print("[GlobalAssetManager] === END DEBUG ===")
+
+func force_reload_streaming_assets():
+	"""Force reload all streaming assets (for debugging)"""
+	print("[GlobalAssetManager] Force reloading all streaming assets...")
+	completed_streams = 0
+	
+	for node_path in streaming_nodes:
+		var asset_info = streaming_nodes[node_path]
+		asset_info.is_loaded = false
+		
+		var node = node_references.get(node_path)
+		if node and is_instance_valid(node):
+			_setup_placeholder_for_node(node)
+	
+	_start_streaming_process() 
