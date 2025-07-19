@@ -1,0 +1,58 @@
+name: Deploy Godot Game
+
+on:
+  push:
+    branches: [ main, develop ]
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Setup Godot
+      uses: chickensoft-games/setup-godot@v1
+      with:
+        version: 4.4.1
+        include-templates: true
+        
+    - name: Determine environment
+      id: env
+      run: |
+        if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          echo "environment=production" >> $GITHUB_OUTPUT
+          echo "deploy_url=https://vocara.world" >> $GITHUB_OUTPUT
+        else
+          echo "environment=staging" >> $GITHUB_OUTPUT
+          echo "deploy_url=https://staging.vocara.world" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Generate environment config
+      run: |
+        godot --headless --script deployment.config.gd --env ${{ steps.env.outputs.environment }}
+        
+    - name: Export game
+      run: |
+        mkdir -p exports
+        godot --headless --export "Web (${{ steps.env.outputs.environment }})" exports/index.html
+        
+    - name: Deploy to staging (develop branch)
+      if: github.ref == 'refs/heads/develop'
+      run: |
+        # Deploy to staging server
+        echo "Deploying to staging..."
+        # rsync, scp, or API call to staging server
+        
+    - name: Deploy to production (main branch)
+      if: github.ref == 'refs/heads/main'
+      run: |
+        # Deploy to production server
+        echo "Deploying to production..."
+        # This could push to vocara-web repo's public/play/ folder
+        
+    - name: Notify deployment
+      run: |
+        echo "✅ Deployed to ${{ steps.env.outputs.deploy_url }}/play" 

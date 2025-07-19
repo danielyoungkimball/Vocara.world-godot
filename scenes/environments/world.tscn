@@ -15,5 +15,5 @@ transform = Transform3D(-0.344823, 0, -0.938668, 0, 1, 0, 0.938668, 0, -0.344823
 transform = Transform3D(-0.877096, 0, 0.480315, 0, 1, 0, -0.480315, 0, -0.877096, -3.90765, -0.127937, 15.5463)
 
 [node name="floating_island" parent="." groups=["large_asset_stream"] instance=ExtResource("2_uafmw")]
-transform = Transform3D(0.240981, 0, 0.0665447, 0, 0.25, 0, -0.0665447, 0, 0.240981, -14.4388, -0.82289, 14.65)
+transform = Transform3D(0.243811, 0, 0.055285, 0, 0.25, 0, -0.055285, 0, 0.243811, -14.5419, -0.457757, 15.4733)
 metadata/asset_path = "models/environment/floating_island.glb"

@@ -19,6 +19,7 @@ signal all_streaming_assets_ready()
 @export var enable_streaming: bool = true
 @export var auto_process_on_ready: bool = true
 @export var show_streaming_progress: bool = true
+@export var debug_scene_tree: bool = false  # Enable for web debugging
 
 # Asset streaming state
 var asset_streamer: Node
@@ -39,10 +40,14 @@ func _ready():
 	# Wait a frame for scene tree to fully initialize
 	await get_tree().process_frame
 	
-	# Find the AssetStreamer
-	asset_streamer = get_node_or_null("/root/Main/AssetStreamer")
+	# Debug scene tree structure (especially important for web builds)
+	if debug_scene_tree or OS.has_feature("web"):
+		_debug_scene_tree()
+	
+	# Find the AssetStreamer with multiple fallback strategies
+	asset_streamer = _find_asset_streamer()
 	if not asset_streamer:
-		print("[GlobalAssetManager] ERROR: AssetStreamer not found!")
+		print("[GlobalAssetManager] ERROR: AssetStreamer not found after all attempts!")
 		return
 	
 	# Connect to AssetStreamer signals
@@ -359,11 +364,131 @@ func _check_streaming_completion():
 		print("[GlobalAssetManager] ✅ All streaming assets loaded! (", completed_streams, "/", total_streams, ")")
 		all_streaming_assets_ready.emit()
 
+func _debug_scene_tree():
+	"""Debug the scene tree structure for web build troubleshooting"""
+	print("[GlobalAssetManager] === SCENE TREE DEBUG ===")
+	
+	var root = get_tree().get_root()
+	print("Root node: ", root.name, " (children: ", root.get_child_count(), ")")
+	
+	# Print all root children
+	for i in range(root.get_child_count()):
+		var child = root.get_child(i)
+		print("  Child ", i, ": ", child.name, " (", child.get_class(), ")")
+		
+		# Print children of Main node if it exists
+		if child.name == "Main":
+			print("    Main node children: ", child.get_child_count())
+			for j in range(child.get_child_count()):
+				var main_child = child.get_child(j)
+				print("      ", j, ": ", main_child.name, " (", main_child.get_class(), ")")
+	
+	# Check if we can find our current node's path
+	print("GlobalAssetManager path: ", get_path())
+	var parent = get_parent()
+	print("GlobalAssetManager parent: ", parent.name if parent else "None")
+	
+	print("[GlobalAssetManager] === END SCENE TREE DEBUG ===")
+
+func _find_asset_streamer() -> Node:
+	"""Find AssetStreamer using multiple strategies for web compatibility"""
+	var candidates = [
+		# Strategy 1: Absolute path (works in local builds)
+		"/root/Main/AssetStreamer",
+		
+		# Strategy 2: Direct under root (web builds)
+		"/root/AssetStreamer",
+		
+		# Strategy 3: Relative to parent (if we're in Main)
+		"../AssetStreamer",
+		
+		# Strategy 4: Sibling search (if we're both children of Main)
+		"AssetStreamer",
+		
+		# Strategy 5: Search from parent's children
+		null  # Will use manual search
+	]
+	
+	for path in candidates:
+		if path == null:
+			# Strategy 4: Manual search through parent's children
+			var parent = get_parent()
+			if parent:
+				print("[GlobalAssetManager] Searching manually in parent: ", parent.name)
+				for i in range(parent.get_child_count()):
+					var child = parent.get_child(i)
+					if child.name == "AssetStreamer":
+						print("[GlobalAssetManager] ✅ Found AssetStreamer via manual search: ", child.get_path())
+						return child
+		else:
+			print("[GlobalAssetManager] Trying path: ", path)
+			var node = get_node_or_null(path)
+			if node:
+				print("[GlobalAssetManager] ✅ Found AssetStreamer at: ", path, " -> ", node.get_path())
+				return node
+			else:
+				print("[GlobalAssetManager] Not found at: ", path)
+	
+	# Strategy 5: Global search by name (last resort)
+	print("[GlobalAssetManager] Attempting global search for AssetStreamer...")
+	var all_nodes = get_tree().get_nodes_in_group("asset_streamer")
+	if all_nodes.size() > 0:
+		print("[GlobalAssetManager] ✅ Found AssetStreamer via group search: ", all_nodes[0].get_path())
+		return all_nodes[0]
+	
+	# Strategy 6: Search entire tree (very last resort)
+	print("[GlobalAssetManager] Attempting full tree search...")
+	var found_node = _search_tree_for_asset_streamer(get_tree().get_root())
+	if found_node:
+		print("[GlobalAssetManager] ✅ Found AssetStreamer via tree search: ", found_node.get_path())
+		return found_node
+	
+	# Strategy 7: Create AssetStreamer programmatically (web build fallback)
+	print("[GlobalAssetManager] AssetStreamer missing from scene - creating programmatically...")
+	return _create_asset_streamer_node()
+
+func _search_tree_for_asset_streamer(node: Node) -> Node:
+	"""Recursively search for AssetStreamer in the entire tree"""
+	if node.name == "AssetStreamer" and node.get_script() != null:
+		return node
+	
+	for child in node.get_children():
+		var result = _search_tree_for_asset_streamer(child)
+		if result:
+			return result
+	
+	return null
+
+func _create_asset_streamer_node() -> Node:
+	"""Create AssetStreamer programmatically for web builds where it's missing"""
+	print("[GlobalAssetManager] Creating AssetStreamer programmatically...")
+	
+	# Load AssetStreamer script
+	var asset_streamer_script = load("res://src/assets/AssetStreamer.gd")
+	if not asset_streamer_script:
+		print("[GlobalAssetManager] ERROR: Cannot load AssetStreamer script!")
+		return null
+	
+	# Create the node
+	var streamer_node = Node.new()
+	streamer_node.name = "AssetStreamer"
+	streamer_node.set_script(asset_streamer_script)
+	
+	# Add it to the same parent as GlobalAssetManager
+	var parent = get_parent()
+	if not parent:
+		parent = get_tree().get_root()
+	
+	parent.add_child(streamer_node)
+	print("[GlobalAssetManager] ✅ Created AssetStreamer at: ", streamer_node.get_path())
+	
+	return streamer_node
+
 func _ensure_asset_streamer_reference():
 	"""Ensure we have a valid AssetStreamer reference, reacquire if necessary"""
 	if not asset_streamer or not is_instance_valid(asset_streamer):
 		print("[GlobalAssetManager] AssetStreamer reference lost, reacquiring...")
-		asset_streamer = get_node_or_null("/root/Main/AssetStreamer")
+		asset_streamer = _find_asset_streamer()
 		
 		if not asset_streamer:
 			print("[GlobalAssetManager] ERROR: Cannot find AssetStreamer!")

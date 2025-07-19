@@ -22,7 +22,7 @@ signal asset_failed(asset_identifier: String, fallback_resource: Resource)
 signal streaming_error(asset_identifier: String, error_message: String)
 
 # Configuration
-@export var server_url: String = "http://localhost:8080"
+@export var server_url: String = ""  # Will be set by environment config
 @export var enable_caching: bool = true
 @export var max_concurrent_downloads: int = 3
 @export var retry_attempts: int = 3
@@ -42,7 +42,11 @@ var manifest_client: HTTPRequest
 
 func _ready():
 	name = "AssetStreamer"
+	add_to_group("asset_streamer")  # Add to group for reliable finding in web builds
 	print("[AssetStreamer] Initializing...")
+	
+	# Load environment configuration
+	_load_environment_config()
 	
 	# Initialize path resolver
 	var resolver_script = load("res://src/core/AssetPathResolver.gd")
@@ -74,6 +78,18 @@ func _ready():
 	call_deferred("load_asset_manifest")
 	
 	print("[AssetStreamer] ✅ Initialization complete")
+
+func _load_environment_config():
+	"""Load environment-specific configuration"""
+	var env_config_script = load("res://src/config/environment.gd")
+	if env_config_script:
+		var env_config = env_config_script.new()
+		server_url = env_config.get_server_url()
+		print("[AssetStreamer] ✅ Environment config loaded - Server: ", server_url)
+	else:
+		# Fallback to localhost for development
+		server_url = "http://localhost:8080"
+		print("[AssetStreamer] ⚠️  Environment config not found, using localhost")
 
 func load_asset_manifest():
 	"""Load asset manifest from server"""
