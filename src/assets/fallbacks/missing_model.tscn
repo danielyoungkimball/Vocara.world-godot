@@ -1,9 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://2gem2kqjmvbs"]
-
-[ext_resource type="Texture2D" uid="uid://bqvj4ml3otle2" path="res://src/assets/fallbacks/missing_texture.png" id="1_01wtb"]
-
-[node name="MissingModel" type="Sprite3D"]
-billboard = 1
-no_depth_test = true
-texture_filter = 0
-texture = ExtResource("1_01wtb")

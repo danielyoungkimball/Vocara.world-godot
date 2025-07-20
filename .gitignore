@@ -37,6 +37,11 @@ assets/textures/floating_island*.png
 *.backup
 *~
 
+# Logs
+logs/
+logs/*
+logs.log
+
 # OS files
 .DS_Store
 .DS_Store?
