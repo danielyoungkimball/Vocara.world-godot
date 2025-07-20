@@ -12,7 +12,8 @@
 [node name="EntityMovement" type="Node" parent="."]
 script = ExtResource("1_1osgq")
 
-[node name="Sketchfab_Scene" parent="." instance=ExtResource("2_6gcd7")]
+[node name="Sketchfab_Scene" parent="." groups=["large_asset_stream"] instance=ExtResource("2_6gcd7")]
+metadata/asset_path = "models/characters/lethal_company/lethal_company_model.glb"
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.931031, 0)

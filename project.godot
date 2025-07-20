@@ -24,6 +24,7 @@ enabled=PackedStringArray("res://addons/EnvironmentSwitch/plugin.cfg")
 [global_group]
 
 targetable="Camera can lock onto target"
+large_asset_stream=""
 
 [input]
 
