@@ -209,7 +209,7 @@ func _face_direction(direction: Vector3, delta: float) -> void:
 		var new_angle = lerp_angle(current_angle, target_angle, ROTATION_SPEED * delta)
 		rotation.y = new_angle
 
-func _handle_jumping(delta: float) -> void:
+func _handle_jumping(_delta: float) -> void:
 	# Random chance to jump when idle or wandering
 	if is_grounded and (current_state == SlimeState.IDLE or current_state == SlimeState.WANDERING):
 		if randf() < JUMP_CHANCE:
@@ -229,7 +229,7 @@ func _handle_squishing(delta: float) -> void:
 		# Return to normal scale
 		scale = scale.lerp(original_scale, delta * 8.0)
 
-func _handle_animation(delta: float) -> void:
+func _handle_animation(_delta: float) -> void:
 	# Gentle bobbing animation when idle
 	if current_state == SlimeState.IDLE:
 		var bob_amount = sin(state_timer * 2.0) * 0.02

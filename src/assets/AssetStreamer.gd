@@ -16,7 +16,7 @@ enum LoadingState {
 
 signal asset_ready(asset_identifier: String, resource: Resource)
 signal asset_download_started(asset_path: String)
-signal asset_download_progress(asset_path: String, progress: float)
+# signal asset_download_progress(asset_path: String, progress: float)
 signal asset_download_completed(asset_path: String, success: bool)
 signal asset_failed(asset_identifier: String, fallback_resource: Resource)
 signal streaming_error(asset_identifier: String, error_message: String)
@@ -85,7 +85,12 @@ func _load_environment_config():
 	if env_config_script:
 		var env_config = env_config_script.new()
 		server_url = env_config.get_server_url()
-		print("[AssetStreamer] ✅ Environment config loaded - Server: ", server_url)
+		# Store R2 CDN URL for direct asset access
+		var r2_cdn_url = env_config.get_r2_cdn_url()
+		print("[AssetStreamer] ✅ Environment config loaded")
+		print("  🌐 Server: ", server_url)
+		print("  ☁️  R2 CDN: ", r2_cdn_url)
+		print("  🏠 Environment: ", env_config.get_environment())
 	else:
 		# Fallback to localhost for development
 		server_url = "http://localhost:8080"
@@ -99,7 +104,7 @@ func load_asset_manifest():
 		print("[AssetStreamer] Failed to request manifest: ", error)
 		streaming_error.emit("", "Failed to request asset manifest")
 
-func _on_manifest_loaded(result: int, response_code: int, headers: PackedStringArray, body: PackedByteArray):
+func _on_manifest_loaded(_result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray):
 	"""Handle manifest loading completion"""
 	if response_code == 200:
 		var json = JSON.new()
@@ -398,7 +403,7 @@ func _start_download(download_info: Dictionary, client: HTTPRequest):
 		print("[AssetStreamer] Failed to start request for ", asset_identifier, ": ", error)
 		_handle_download_failure(client, "Failed to start HTTP request")
 
-func _on_request_completed(result: int, response_code: int, headers: PackedStringArray, body: PackedByteArray):
+func _on_request_completed(_result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray):
 	"""Handle completed HTTP request"""
 	var client = null
 	
@@ -452,7 +457,7 @@ func _save_and_load_asset(asset_identifier: String, asset_info, data: PackedByte
 		asset_states[asset_identifier] = LoadingState.FAILED
 		_load_fallback_asset(asset_identifier, asset_info)
 
-func _handle_download_failure(client: HTTPRequest, error_message: String):
+func _handle_download_failure(client: HTTPRequest, _error_message: String):
 	"""Handle download failure with retry logic"""
 	var download_info = active_downloads[client]
 	var asset_identifier = download_info.asset_identifier

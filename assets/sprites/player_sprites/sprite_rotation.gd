@@ -41,7 +41,7 @@ func get_frame_index(angle: float) -> int:
 		return 8
 	
 	# For angles 11.25-348.75, calculate frame based on 22.5° divisions
-	var frame = int((angle - 11.25) / 22.5)
+	var calculated_frame = int((angle - 11.25) / 22.5)
 	
 	# Map to correct frame numbers:
 	# 11.25-33.75° -> frame 7
@@ -56,7 +56,7 @@ func get_frame_index(angle: float) -> int:
 	
 	if angle >= 11.25 and angle < 191.25:
 		# Right side frames: 7, 6, 5, 4, 3, 2, 1, 0
-		return 7 - frame
+		return 7 - calculated_frame
 	else:
 		# Left side frames: same as right but will be flipped
 		var left_frame = int((angle - 191.25) / 22.5)

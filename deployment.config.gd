@@ -9,21 +9,23 @@ static var environments = {
 	"development": {
 		"name": "Development",
 		"server_url": "http://localhost:8080",
-		"multiplayer_url": "http://localhost:8081", 
-		"asset_base_url": "http://localhost:8080/assets",
+		"multiplayer_url": "ws://localhost:8080", 
+		"asset_base_url": "http://localhost:8080/api/assets",
+		"r2_cdn_url": "https://assets.vocara-multiplayer.com",
 		"debug_enabled": true,
 		"export_preset": "Web (Debug)",
 		"features": {
-			"multiplayer": false,
+			"multiplayer": true,
 			"analytics": false,
 			"error_reporting": false
 		}
 	},
 	"staging": {
 		"name": "Staging",
-		"server_url": "https://staging-api.vocara.world",
-		"multiplayer_url": "https://staging-multiplayer.vocara-multiplayer.com",
-		"asset_base_url": "https://staging-assets.vocara.world", 
+		"server_url": "http://vocara-multiplayer.com",
+		"multiplayer_url": "ws://vocara-multiplayer.com",
+		"asset_base_url": "http://vocara-multiplayer.com/api/assets",
+		"r2_cdn_url": "https://assets.vocara-multiplayer.com", 
 		"debug_enabled": true,
 		"export_preset": "Web (Debug)",
 		"features": {
@@ -34,9 +36,10 @@ static var environments = {
 	},
 	"production": {
 		"name": "Production", 
-		"server_url": "https://api.vocara.world",
-		"multiplayer_url": "https://multiplayer.vocara-multiplayer.com",
-		"asset_base_url": "https://assets.vocara.world",
+		"server_url": "http://vocara-multiplayer.com",
+		"multiplayer_url": "ws://vocara-multiplayer.com",
+		"asset_base_url": "http://vocara-multiplayer.com/api/assets",
+		"r2_cdn_url": "https://assets.vocara-multiplayer.com",
 		"debug_enabled": false,
 		"export_preset": "Web (Production)",
 		"features": {
@@ -67,6 +70,7 @@ extends RefCounted
 const SERVER_URL = "%s"
 const MULTIPLAYER_URL = "%s" 
 const ASSET_BASE_URL = "%s"
+const R2_CDN_URL = "%s"
 const DEBUG_ENABLED = %s
 const ENVIRONMENT = "%s"
 const BUILD_ID = "%s"
@@ -80,6 +84,9 @@ static func get_multiplayer_url() -> String:
 static func get_asset_base_url() -> String:
 	return ASSET_BASE_URL
 
+static func get_r2_cdn_url() -> String:
+	return R2_CDN_URL
+
 static func is_debug_enabled() -> bool:
 	return DEBUG_ENABLED
 
@@ -91,6 +98,16 @@ static func get_build_id() -> String:
 
 static func get_features() -> Dictionary:
 	return %s
+
+# Easy environment detection
+static func is_development() -> bool:
+	return ENVIRONMENT == "development"
+
+static func is_production() -> bool:
+	return ENVIRONMENT == "production"
+
+static func is_staging() -> bool:
+	return ENVIRONMENT == "staging"
 """ % [
 		config.name,
 		build_id,
@@ -98,6 +115,7 @@ static func get_features() -> Dictionary:
 		config.server_url,
 		config.multiplayer_url,
 		config.asset_base_url,
+		config.r2_cdn_url,
 		config.debug_enabled,
 		environment,
 		build_id,
@@ -115,7 +133,9 @@ static func get_features() -> Dictionary:
 		file.close()
 		print("✅ Generated environment config for: %s" % config.name)
 		print("🌐 Server URL: %s" % config.server_url)
+		print("🎮 Multiplayer URL: %s" % config.multiplayer_url)
 		print("📦 Asset URL: %s" % config.asset_base_url)
+		print("☁️  R2 CDN URL: %s" % config.r2_cdn_url)
 		print("🔧 Export preset: %s" % config.export_preset)
 		return true
 	else:

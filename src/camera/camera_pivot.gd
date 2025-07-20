@@ -140,7 +140,7 @@ func handle_target_selection():
 					var distance = mouse_pos.distance_to(screen_pos)
 					
 					# If mouse is close to this object and it's closer than previous closest
-					if distance < 50: # 50el tolerance
+					if distance < 50 and distance < closest_distance: # 50 pixel tolerance
 						closest_target = node
 						closest_distance = distance
 			

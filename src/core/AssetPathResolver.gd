@@ -305,13 +305,15 @@ func _count_total_assets() -> int:
 
 # Utility functions for external use
 
-func get_stream_url(asset_info: AssetInfo, server_url: String = "http://localhost:8080") -> String:
+func get_stream_url(asset_info: AssetInfo, server_url: String = "") -> String:
 	"""Get streaming URL for asset"""
-	return server_url + "/assets/stream/" + asset_info.relative_path
+	var base_url = server_url if not server_url.is_empty() else "http://localhost:8080"
+	return base_url + "/assets/stream/" + asset_info.relative_path
 
-func get_chunk_url(asset_info: AssetInfo, chunk_index: int, server_url: String = "http://localhost:8080") -> String:
+func get_chunk_url(asset_info: AssetInfo, chunk_index: int, server_url: String = "") -> String:
 	"""Get chunk URL for asset"""
-	return server_url + "/assets/chunks/" + asset_info.relative_path + "/" + str(chunk_index)
+	var base_url = server_url if not server_url.is_empty() else "http://localhost:8080"
+	return base_url + "/assets/chunks/" + asset_info.relative_path + "/" + str(chunk_index)
 
 func is_cached(asset_info: AssetInfo) -> bool:
 	"""Check if asset is cached locally"""
