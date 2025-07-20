@@ -17,13 +17,9 @@ boot_splash/show_image=false
 boot_splash/fullsize=false
 boot_splash/use_filter=false
 
-[autoload]
-
-AssetManager="*res://src/core/AssetManager.gd"
-
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/swap_environment/plugin.cfg")
+enabled=PackedStringArray("res://addons/EnvironmentSwitch/plugin.cfg")
 
 [global_group]
 

@@ -24,10 +24,14 @@ builds/
 exports/
 *.tmp
 
-# Large assets (for streaming)
-assets/models/environment/floating_island.glb
-assets/models/environment/floating_island_Image_*.png
-assets/textures/floating_island*.png
+# assets
+assets/
+assets/*
+assets/*/*
+assets/*/*/*
+assets/*/*/*/*
+assets/*/*/*/*/*
+assets/*/*/*/*/*/*
 
 # Asset cache
 .asset_cache/

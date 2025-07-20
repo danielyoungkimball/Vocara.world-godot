@@ -1,10 +1,9 @@
-[gd_scene load_steps=9 format=3 uid="uid://cmriaa136qhtl"]
+[gd_scene load_steps=8 format=3 uid="uid://cmriaa136qhtl"]
 
 [ext_resource type="PackedScene" uid="uid://dhgsi2agp1m" path="res://scenes/environments/world.tscn" id="1_ig7tw"]
-[ext_resource type="PackedScene" uid="uid://bgrrhlwuly4jf" path="res://scenes/characters/player.tscn" id="2_h2yge"]
-[ext_resource type="Script" uid="uid://wxp3sxrov6rf" path="res://src/camera/camera_pivot.gd" id="3_h2yge"]
-[ext_resource type="Texture2D" uid="uid://beu14a0v5nffy" path="res://assets/sprites/ui_sprites/target_indicator-Sheet.png" id="4_lquwl"]
-[ext_resource type="Script" uid="uid://bud1wg24vpimt" path="res://src/camera/target_indicator.gd" id="5_7mycd"]
+[ext_resource type="PackedScene" uid="uid://bgrrhlwuly4jf" path="res://scenes/characters/player/player.tscn" id="2_h2yge"]
+[ext_resource type="PackedScene" uid="uid://camea6yp2bqpq" path="res://scenes/camera/camera.tscn" id="3_h2yge"]
+[ext_resource type="Script" uid="uid://6qy53ayxojac" path="res://src/asset_streamer/AssetStreamer.gd" id="4_1bvp3"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_0xm2m"]
 sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
@@ -32,16 +31,7 @@ shadow_enabled = true
 
 [node name="player" parent="." groups=["targetable"] instance=ExtResource("2_h2yge")]
 
-[node name="CameraPivot" type="Node3D" parent="."]
-script = ExtResource("3_h2yge")
+[node name="CameraPivot" parent="." instance=ExtResource("3_h2yge")]
 
-[node name="Camera3D" type="Camera3D" parent="CameraPivot"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10, 10)
-fov = 45.0
-
-[node name="Target Indicator" type="Sprite3D" parent="CameraPivot"]
-transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 0)
-texture_filter = 0
-texture = ExtResource("4_lquwl")
-hframes = 2
-script = ExtResource("5_7mycd")
+[node name="AssetStreamer" type="Node" parent="."]
+script = ExtResource("4_1bvp3")

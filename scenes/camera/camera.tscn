@@ -1,0 +1,19 @@
+[gd_scene load_steps=4 format=3 uid="uid://camea6yp2bqpq"]
+
+[ext_resource type="Script" uid="uid://wxp3sxrov6rf" path="res://scenes/camera/camera_pivot.gd" id="1_0jiuk"]
+[ext_resource type="Texture2D" uid="uid://beu14a0v5nffy" path="res://assets/sprites/ui_sprites/target_indicator-Sheet.png" id="2_qr7cc"]
+[ext_resource type="Script" uid="uid://bud1wg24vpimt" path="res://scenes/camera/target_indicator.gd" id="3_u3rx3"]
+
+[node name="CameraPivot" type="Node3D"]
+script = ExtResource("1_0jiuk")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10, 10)
+fov = 45.0
+
+[node name="Target Indicator" type="Sprite3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 0)
+texture_filter = 0
+texture = ExtResource("2_qr7cc")
+hframes = 2
+script = ExtResource("3_u3rx3")
