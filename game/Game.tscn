@@ -1,0 +1,17 @@
+[gd_scene load_steps=5 format=3 uid="uid://cmriaa136qhtl"]
+
+[ext_resource type="PackedScene" uid="uid://dhgsi2agp1m" path="res://scenes/levels/level.tscn" id="1_m71xk"]
+[ext_resource type="PackedScene" uid="uid://bgrrhlwuly4jf" path="res://scenes/characters/player/player.tscn" id="2_i75et"]
+[ext_resource type="PackedScene" uid="uid://camea6yp2bqpq" path="res://scenes/camera/camera.tscn" id="3_adwu5"]
+[ext_resource type="PackedScene" uid="uid://cg14v47gxob5w" path="res://assets/models/characters/mobs/slime_model.glb" id="5_adwu5"]
+
+[node name="Game" type="Node3D"]
+
+[node name="Camera" parent="." instance=ExtResource("3_adwu5")]
+
+[node name="Player" parent="." groups=["targetable"] instance=ExtResource("2_i75et")]
+
+[node name="Level" parent="." instance=ExtResource("1_m71xk")]
+script = null
+
+[node name="slime_model" parent="." instance=ExtResource("5_adwu5")]

@@ -5,7 +5,7 @@
 [ext_resource type="Script" uid="uid://cn67cmsvxkmsf" path="res://scenes/characters/entity_movement.gd" id="2_entity"]
 [ext_resource type="Texture2D" uid="uid://i5e88njhmvsd" path="res://assets/sprites/player_sprites/quad.png" id="2_qjkh3"]
 [ext_resource type="Texture2D" uid="uid://cdvbpajsg4dax" path="res://assets/sprites/player_sprites/character-sprite-anims-Sheet.png" id="2_yw30f"]
-[ext_resource type="Script" uid="uid://b0mjifm2h8lti" path="res://assets/sprites/player_sprites/sprite_rotation.gd" id="3_g1dw6"]
+[ext_resource type="Script" uid="uid://b0mjifm2h8lti" path="res://scenes/sprite_rotation.gd" id="3_g1dw6"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8f2f7"]
 resource_name = "Clay Material"

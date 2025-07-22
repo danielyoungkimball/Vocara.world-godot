@@ -1,7 +1,7 @@
 extends CharacterBody3D
 
 @onready var navigation_agent_3d: NavigationAgent3D = $NavigationAgent3D
-@onready var camera_3d: Camera3D = $"../CameraPivot/Camera3D"
+@onready var camera_3d: Camera3D = $"../Camera/Camera3D"
 @onready var anim_player: AnimationPlayer = $AnimationPlayer
 @onready var entity_movement = $EntityMovement
 
@@ -237,8 +237,9 @@ func _handle_rotation(delta: float) -> void:
 # Gravity removed - souls-like ground-based combat only
 
 # Signal handlers for EntityMovement component
-func _on_ground_state_changed(is_grounded: bool):
-	print("[PLAYER] Ground state changed: ", is_grounded)
+func _on_ground_state_changed(_is_grounded: bool):
+	# print("[PLAYER] Ground state changed: ", is_grounded)
+	pass
 
 func _on_left_navigation_region():
 	print("[PLAYER] Left navigation region")

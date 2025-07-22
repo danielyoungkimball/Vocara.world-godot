@@ -1,0 +1,42 @@
+[gd_scene load_steps=7 format=3 uid="uid://dhgsi2agp1m"]
+
+[ext_resource type="PackedScene" uid="uid://dqcrjnlc2j6p" path="res://scenes/characters/mobs/slime/slime_model.tscn" id="2_25q60"]
+[ext_resource type="PackedScene" uid="uid://bojhf2vp4y6xo" path="res://assets/models/environment/squidgames.glb" id="2_uafmw"]
+
+[sub_resource type="GDScript" id="GDScript_bovvr"]
+script/source = "extends Node3D
+"
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_bovvr"]
+sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
+ground_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
+
+[sub_resource type="Sky" id="Sky_h2yge"]
+sky_material = SubResource("ProceduralSkyMaterial_bovvr")
+
+[sub_resource type="Environment" id="Environment_b2cq8"]
+background_mode = 2
+sky = SubResource("Sky_h2yge")
+tonemap_mode = 2
+glow_enabled = true
+
+[node name="Overworld" type="Node3D"]
+script = SubResource("GDScript_bovvr")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_b2cq8")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.866024, -0.433016, 0.250001, 0, 0.499998, 0.866026, -0.500003, 0.749999, -0.43301, 0, 0, 0)
+shadow_enabled = true
+
+[node name="Slime_Character" parent="." instance=ExtResource("2_25q60")]
+transform = Transform3D(-0.903821, 0, 0.42791, 0, 1, 0, -0.42791, 0, -0.903821, 1.14803, 0.525483, 3.5679)
+
+[node name="Slime_Character2" parent="." instance=ExtResource("2_25q60")]
+transform = Transform3D(-0.344823, 0, -0.938668, 0, 1, 0, 0.938668, 0, -0.344823, 1.49043, 0.459508, 1.18456)
+
+[node name="Slime_Character3" parent="." instance=ExtResource("2_25q60")]
+transform = Transform3D(-0.877096, 0, 0.480315, 0, 1, 0, -0.480315, 0, -0.877096, -3.90765, 0.436403, 8.2629)
+
+[node name="squidgames" parent="." instance=ExtResource("2_uafmw")]

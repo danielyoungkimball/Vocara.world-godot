@@ -1,7 +1,7 @@
 [gd_scene load_steps=8 format=4 uid="uid://dqcrjnlc2j6p"]
 
 [ext_resource type="Texture2D" uid="uid://dcq00gmpdox1k" path="res://assets/sprites/slime_sprites/slime-Sheet.png" id="1_hcnxy"]
-[ext_resource type="Script" uid="uid://b0mjifm2h8lti" path="res://assets/sprites/player_sprites/sprite_rotation.gd" id="2_g4ll8"]
+[ext_resource type="Script" uid="uid://b0mjifm2h8lti" path="res://scenes/sprite_rotation.gd" id="2_g4ll8"]
 [ext_resource type="Script" uid="uid://cn67cmsvxkmsf" path="res://scenes/characters/entity_movement.gd" id="3_g4ll8"]
 [ext_resource type="Script" uid="uid://4c8fiwn6d35f" path="res://scenes/characters/mobs/slime/slime_ai.gd" id="4_slime_ai"]
 

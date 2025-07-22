@@ -11,11 +11,18 @@ config_version=5
 [application]
 
 config/name="vocara.world"
-run/main_scene="res://main.tscn"
+run/main_scene="uid://b1dryjwck6dro"
 config/features=PackedStringArray("4.4", "Forward Plus")
 boot_splash/show_image=false
 boot_splash/fullsize=false
 boot_splash/use_filter=false
+config/icon="uid://00i7ksajhynb"
+config/macos_native_icon="res://assets/icons/Vocara.icns"
+config/windows_native_icon="res://assets/icons/Vocara.ico"
+
+[autoload]
+
+AssetStreamer="*res://src/asset_streamer/asset_streamer.gd"
 
 [editor_plugins]
 
@@ -24,7 +31,6 @@ enabled=PackedStringArray("res://addons/EnvironmentSwitch/plugin.cfg")
 [global_group]
 
 targetable="Camera can lock onto target"
-large_asset_stream=""
 
 [input]
 
