@@ -20,10 +20,6 @@ config/icon="uid://00i7ksajhynb"
 config/macos_native_icon="res://assets/icons/Vocara.icns"
 config/windows_native_icon="res://assets/icons/Vocara.ico"
 
-[autoload]
-
-AssetStreamer="*res://src/asset_streamer/asset_streamer.gd"
-
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/EnvironmentSwitch/plugin.cfg")

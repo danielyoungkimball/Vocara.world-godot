@@ -2,5 +2,7 @@
 
 [ext_resource type="Script" uid="uid://bdh0sqjsr20up" path="res://init/InitializeClient.gd" id="1_uak1j"]
 
-[node name="InitializeClient" type="Node3D"]
+[node name="InitializeClient" type="Control"]
+layout_mode = 3
+anchors_preset = 0
 script = ExtResource("1_uak1j")

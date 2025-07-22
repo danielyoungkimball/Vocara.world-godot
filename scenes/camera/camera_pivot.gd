@@ -24,15 +24,15 @@ var is_locked_on: bool = false # Whether we're in lock-on mode
 @onready var camera: Camera3D = $Camera3D
 
 func _ready():
-	if get_node_or_null("../player"):
-		target = get_node("../player")
+	if get_node_or_null("../Player"):
+		target = get_node("../Player")
 		locked_target = target # Default to player
 		free_camera_pos = target.global_transform.origin
 		global_transform.origin = target.global_transform.origin
 		is_locked_on = true # Start locked on to player
 		print("[CAMERA] Initialized - locked on player")
 	else:
-		print("[CAMERA] ERROR: Player not found at ../player")
+		print("[CAMERA] ERROR: Player not found at ../Player")
 	
 	_update_camera_transform()
 
@@ -180,8 +180,8 @@ func lock_on_target(new_target: Node3D):
 	# Don't reset yaw for any target - preserve current camera angle
 
 func recenter_on_player():
-	if get_node_or_null("../player"):
-		locked_target = get_node("../player")
+	if get_node_or_null("../Player"):
+		locked_target = get_node("../Player")
 		is_locked_on = true
 		current_yaw = 0.0
 		global_transform.origin = locked_target.global_transform.origin
@@ -229,8 +229,8 @@ func is_locked_on_mode() -> bool:
 
 # Instantly snap and lock to player
 func snap_and_lock_to_player():
-	if get_node_or_null("../player"):
-		locked_target = get_node("../player")
+	if get_node_or_null("../Player"):
+		locked_target = get_node("../Player")
 		is_locked_on = true
 		# Preserve current rotation instead of resetting to 0
 		global_transform.origin = locked_target.global_transform.origin
